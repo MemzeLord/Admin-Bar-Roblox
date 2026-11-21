@@ -1,0 +1,580 @@
+--[[
+
+		Gui2Lua™
+		10zOfficial
+		Version 1.0.0
+
+]]
+
+
+-- Instances
+
+local ScreenGui = Instance.new("ScreenGui")
+local TextBox = Instance.new("TextBox")
+local Frame = Instance.new("Frame")
+local TextLabel = Instance.new("TextLabel")
+
+-- Properties
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+TextBox.Parent = ScreenGui
+TextBox.BackgroundColor3 = Color3.new(0, 0, 0)
+TextBox.BackgroundTransparency = 0.44999998807907104
+TextBox.BorderColor3 = Color3.new(0, 0, 0)
+TextBox.BorderSizePixel = 0
+TextBox.Position = UDim2.new(0.321115136, 0, 0.812334299, 0)
+TextBox.Size = UDim2.new(0, 504, 0, 33)
+TextBox.Font = Enum.Font.SourceSansBold
+TextBox.PlaceholderColor3 = Color3.new(0.756863, 0.756863, 0.756863)
+TextBox.PlaceholderText = "Type command here!"
+TextBox.Text = ""
+TextBox.TextColor3 = Color3.new(1, 1, 1)
+TextBox.TextSize = 20
+
+Frame.Parent = TextBox
+Frame.BackgroundColor3 = Color3.new(0, 0.584314, 0.764706)
+Frame.BorderColor3 = Color3.new(0, 0, 0)
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0, 0, 0.992180109, 0)
+Frame.Size = UDim2.new(0, 504, 0, 5)
+
+TextLabel.Parent = TextBox
+TextLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+TextLabel.BackgroundTransparency = 1
+TextLabel.BorderColor3 = Color3.new(0, 0, 0)
+TextLabel.BorderSizePixel = 0
+TextLabel.Position = UDim2.new(-0.0634920672, 0, -0.636363626, 0)
+TextLabel.Size = UDim2.new(0, 229, 0, 15)
+TextLabel.Font = Enum.Font.SourceSansBold
+TextLabel.Text = "Made by Qualitysed - Client"
+TextLabel.TextColor3 = Color3.new(1, 1, 1)
+TextLabel.TextSize = 12
+
+-- Scripts
+
+local function ROELTXA_fake_script() -- TextBox.LocalScript 
+	local script = Instance.new('LocalScript', TextBox)
+
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	
+	local player = Players.LocalPlayer
+	local textBox = script.Parent
+	local frame = textBox:FindFirstChildOfClass("Frame")
+	local camera = workspace.CurrentCamera
+	
+	local COLOR_DEFAULT = Color3.fromRGB(0, 120, 255)
+	local COLOR_SUCCESS = Color3.fromRGB(0, 200, 80)
+	local COLOR_ERROR   = Color3.fromRGB(220, 50, 50)
+	local colorToken = 0
+	
+	-- cool script right???? breh just use it
+	
+	local function setDefaultColor()
+		if frame then
+			frame.BackgroundColor3 = COLOR_DEFAULT
+		end
+	end
+	
+	local function flashFrameColor(targetColor)
+		if not frame then return end
+		colorToken += 1
+		local currentToken = colorToken
+		frame.BackgroundColor3 = targetColor
+	
+		task.delay(3, function()
+			if colorToken == currentToken then
+				setDefaultColor()
+			end
+		end)
+	end
+	
+	local function flashFrameRGB()
+		if not frame then return end
+		colorToken += 1
+		local currentToken = colorToken
+	
+		task.spawn(function()
+			local startTime = os.clock()
+			while os.clock() - startTime < 3 do
+				if colorToken ~= currentToken then return end
+				local hue = ((os.clock() - startTime) * 1.5) % 1
+				frame.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+				RunService.RenderStepped:Wait()
+			end
+			if colorToken == currentToken then
+				setDefaultColor()
+			end
+		end)
+	end
+	
+	
+	setDefaultColor()
+	
+	local flying = false
+	local flyUnlocked = false
+	local flySpeed = 60
+	local toggleKey = Enum.KeyCode.E
+	local spinning = false
+	local spinSpeed = 10
+	local noclipping = false
+	local SoundService = game:GetService("SoundService")
+	
+	local clickAudioEnabled = false
+	local clickSound = Instance.new("Sound")
+	clickSound.Name = "ClickAudioSound"
+	clickSound.Volume = 1
+	clickSound.Parent = SoundService -- Plays clearly regardless of camera distance
+	
+	local bodyGyro = Instance.new("BodyGyro")
+	bodyGyro.P = 90000
+	bodyGyro.MaxTorque = Vector3.new(900000, 900000, 900000)
+	
+	local bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.MaxForce = Vector3.new(900000, 900000, 900000)
+	bodyVelocity.Velocity = Vector3.zero
+	
+	local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+	bodyAngularVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
+	bodyAngularVelocity.P = 90000
+	
+	local function getCharacterParts(targetPlayer)
+		targetPlayer = targetPlayer or player
+		local character = targetPlayer.Character
+		if not character then return nil, nil end
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		return humanoid, rootPart
+	end
+	
+	local function findPlayer(query)
+		if not query or query == "" then return nil end
+		query = query:lower()
+	
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr.Name:lower() == query or plr.DisplayName:lower() == query then
+				return plr
+			end
+		end
+	
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr.Name:lower():sub(1, #query) == query or plr.DisplayName:lower():sub(1, #query) == query then
+				return plr
+			end
+		end
+	
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr.Name:lower():find(query, 1, true) or plr.DisplayName:lower():find(query, 1, true) then
+				return plr
+			end
+		end
+	
+		return nil
+	end
+	
+	local function startFlying()
+		local humanoid, rootPart = getCharacterParts()
+		if not humanoid or not rootPart or humanoid.Health <= 0 then return false end
+		flying = true
+		humanoid.PlatformStand = true
+		bodyGyro.CFrame = rootPart.CFrame
+		bodyGyro.Parent = rootPart
+		bodyVelocity.Parent = rootPart
+		return true
+	end
+	
+	local function stopFlying()
+		flying = false
+		local humanoid, _ = getCharacterParts()
+		if humanoid then humanoid.PlatformStand = false end
+		bodyGyro.Parent = nil
+		bodyVelocity.Parent = nil
+		bodyVelocity.Velocity = Vector3.zero
+	end
+	
+	local function startSpinning(speed)
+		local humanoid, rootPart = getCharacterParts()
+		if not humanoid or not rootPart or humanoid.Health <= 0 then return false end
+		spinning = true
+		spinSpeed = speed
+		bodyAngularVelocity.AngularVelocity = Vector3.new(0, spinSpeed, 0)
+		bodyAngularVelocity.Parent = rootPart
+		return true
+	end
+	
+	local function stopSpinning()
+		spinning = false
+		bodyAngularVelocity.Parent = nil
+		bodyAngularVelocity.AngularVelocity = Vector3.zero
+	end
+	
+	local function startNoclip()
+		local humanoid, rootPart = getCharacterParts()
+		if not humanoid or not rootPart or humanoid.Health <= 0 then return false end
+		noclipping = true
+		return true
+	end
+	
+	local function stopNoclip()
+		noclipping = false
+		local character = player.Character
+		if not character then return end
+		local solidParts = {"HumanoidRootPart", "Head", "Torso", "UpperTorso", "LowerTorso"}
+		for _, partName in ipairs(solidParts) do
+			local part = character:FindFirstChild(partName)
+			if part and part:IsA("BasePart") then part.CanCollide = true end
+		end
+	end
+	
+	local function resetCameraToSelf()
+		local humanoid, _ = getCharacterParts(player)
+		if humanoid then camera.CameraSubject = humanoid end
+	end
+	
+	local Lighting = game:GetService("Lighting")
+	
+	local discoEnabled = false
+	local origAmbient = Lighting.Ambient
+	local origOutdoorAmbient = Lighting.OutdoorAmbient
+	local origFogColor = Lighting.FogColor
+	local origColorShiftTop = Lighting.ColorShift_Top
+	
+	local discoEffect = Instance.new("ColorCorrectionEffect")
+	discoEffect.Name = "DiscoColorEffect"
+	discoEffect.Enabled = false
+	discoEffect.Parent = Lighting
+	
+	local function startDisco()
+		if discoEnabled then return end
+		origAmbient = Lighting.Ambient
+		origOutdoorAmbient = Lighting.OutdoorAmbient
+		origFogColor = Lighting.FogColor
+		origColorShiftTop = Lighting.ColorShift_Top
+	
+		discoEnabled = true
+		discoEffect.Enabled = true
+	
+		task.spawn(function()
+			while discoEnabled do
+				local hue = (os.clock() * 2) % 1
+				local color = Color3.fromHSV(hue, 0.9, 1)
+				Lighting.Ambient = color
+				Lighting.OutdoorAmbient = color
+				Lighting.FogColor = color
+				Lighting.ColorShift_Top = color
+				discoEffect.TintColor = Color3.fromHSV((hue + 0.5) % 1, 0.4, 1)
+				task.wait(0.15)
+			end
+		end)
+	end
+	
+	local function stopDisco()
+		if not discoEnabled then return end
+		discoEnabled = false
+		discoEffect.Enabled = false
+		Lighting.Ambient = origAmbient
+		Lighting.OutdoorAmbient = origOutdoorAmbient
+		Lighting.FogColor = origFogColor
+		Lighting.ColorShift_Top = origColorShiftTop
+	end
+	
+	local petPart = nil
+	local petImageLabel = nil
+	
+	local function removeImagePet()
+		if petPart then
+			petPart:Destroy()
+			petPart = nil
+			petImageLabel = nil
+		end
+	end
+	
+	local function spawnImagePet(imageId)
+		local _, rootPart = getCharacterParts()
+		if not rootPart then return false end
+		removeImagePet()
+	
+		petPart = Instance.new("Part")
+		petPart.Name = "ImagePetPart"
+		petPart.Size = Vector3.new(1, 1, 1)
+		petPart.Transparency = 1
+		petPart.Anchored = true
+		petPart.CanCollide = false
+		petPart.CanQuery = false
+		petPart.CanTouch = false
+		petPart.CFrame = rootPart.CFrame * CFrame.new(3, 2, 1)
+		petPart.Parent = workspace
+	
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = "PetBillboard"
+		billboard.Size = UDim2.new(2, 0, 2, 0)
+		billboard.AlwaysOnTop = false
+		billboard.Parent = petPart
+	
+		local petImage = Instance.new("ImageLabel")
+		petImage.Size = UDim2.new(1, 0, 1, 0)
+		petImage.BackgroundTransparency = 1
+		petImage.ScaleType = Enum.ScaleType.Fit
+		petImage.Image = "rbxthumb://type=Asset&id=" .. imageId .. "&w=420&h=420"
+		petImage.Parent = billboard
+	
+		return true
+	end
+	
+	
+	textBox.FocusLost:Connect(function(enterPressed)
+		if not enterPressed then return end
+	
+		local inputText = textBox.Text:lower():gsub("^%s*(.-)%s*$", "%1")
+		if inputText == "" then return end
+	
+		local humanoid, rootPart = getCharacterParts()
+	
+		if inputText == "fly" then
+			flySpeed = 60
+			if startFlying() then
+				flyUnlocked = true
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText:match("^fly%s+(%d+%.?%d*)$") then
+			local newSpeed = tonumber(inputText:match("^fly%s+(%d+%.?%d*)$"))
+			if newSpeed and newSpeed > 0 and startFlying() then
+				flySpeed = newSpeed
+				flyUnlocked = true
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "unfly" then
+			flyUnlocked = false
+			stopFlying()
+			flashFrameColor(COLOR_SUCCESS)
+		elseif inputText:match("^speed%s+(%d+%.?%d*)$") then
+			local newWalkSpeed = tonumber(inputText:match("^speed%s+(%d+%.?%d*)$"))
+			if humanoid and newWalkSpeed and newWalkSpeed >= 0 then
+				humanoid.WalkSpeed = newWalkSpeed
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText:match("^jump%s+(%d+%.?%d*)$") then
+			local newJump = tonumber(inputText:match("^jump%s+(%d+%.?%d*)$"))
+			if humanoid and newJump and newJump >= 0 then
+				humanoid.UseJumpPower = true
+				humanoid.JumpPower = newJump
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText:match("^spin%s+(%d+%.?%d*)$") then
+			local newSpin = tonumber(inputText:match("^spin%s+(%d+%.?%d*)$"))
+			if newSpin and newSpin > 0 and startSpinning(newSpin) then
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "unspin" then
+			stopSpinning()
+			flashFrameColor(COLOR_SUCCESS)
+		elseif inputText == "noclip" then
+			if startNoclip() then
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "clip" then
+			stopNoclip()
+			flashFrameColor(COLOR_SUCCESS)
+		elseif inputText == "sit" then
+			if humanoid and humanoid.Health > 0 then
+				humanoid.Sit = true
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText:match("^view%s+(.+)$") then
+			local targetName = inputText:match("^view%s+(.+)$")
+			local targetPlayer = findPlayer(targetName)
+			local targetHumanoid, _ = getCharacterParts(targetPlayer)
+			if targetPlayer and targetHumanoid then
+				camera.CameraSubject = targetHumanoid
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "unview" then
+			resetCameraToSelf()
+			flashFrameColor(COLOR_SUCCESS)
+		elseif inputText:match("^teleport%s+(.+)$") or inputText:match("^goto%s+(.+)$") or inputText:match("^tp%s+(.+)$") then
+			local targetName = inputText:match("^teleport%s+(.+)$")
+				or inputText:match("^goto%s+(.+)$")
+				or inputText:match("^tp%s+(.+)$")
+	
+			local targetPlayer = findPlayer(targetName)
+			local _, targetRoot = getCharacterParts(targetPlayer)
+			local myChar = player.Character
+	
+			if targetPlayer and targetRoot and humanoid and humanoid.Health > 0 and myChar then
+				humanoid.Sit = false
+				if rootPart then
+					rootPart.AssemblyLinearVelocity = Vector3.zero
+					rootPart.AssemblyAngularVelocity = Vector3.zero
+				end
+				if bodyVelocity.Parent then
+					bodyVelocity.Velocity = Vector3.zero
+				end
+				myChar:PivotTo(targetRoot.CFrame * CFrame.new(0, 0, 3))
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+			
+		elseif inputText == "awesomebar" then
+			flashFrameRGB()
+			
+		elseif inputText:match("^clickaudio%s+(.+)$") then
+			local rawId = inputText:match("^clickaudio%s+(.+)$")
+			local soundId = rawId:match("(%d+)")
+			if soundId then
+				clickSound.SoundId = "rbxassetid://" .. soundId
+				clickAudioEnabled = true
+				clickSound:Play() 
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "unclickaudio" then
+			clickAudioEnabled = false
+			clickSound:Stop()
+			flashFrameColor(COLOR_SUCCESS)
+			
+		elseif inputText == "disco" then
+			startDisco()
+			flashFrameColor(COLOR_SUCCESS)
+		elseif inputText == "undisco" then
+			stopDisco()
+			flashFrameColor(COLOR_SUCCESS)
+	
+		elseif inputText:match("^imagepet%s+(.+)$") then
+			local rawId = inputText:match("^imagepet%s+(.+)$")
+			local imageId = rawId:match("(%d+)")
+			if imageId and spawnImagePet(imageId) then
+				flashFrameColor(COLOR_SUCCESS)
+			else
+				flashFrameColor(COLOR_ERROR)
+			end
+		elseif inputText == "unimagepet" or inputText == "removepet" then
+			removeImagePet()
+			flashFrameColor(COLOR_SUCCESS)
+	
+	
+		elseif inputText == "stop" or inputText == "reset" then
+			flyUnlocked = false
+			stopFlying()
+			stopSpinning()
+			stopNoclip()
+			resetCameraToSelf()
+			clickAudioEnabled = false
+			clickSound:Stop()
+			stopDisco()
+			removeImagePet()
+	
+			if humanoid then
+				humanoid.Sit = false
+				humanoid.WalkSpeed = 16
+				humanoid.UseJumpPower = true
+				humanoid.JumpPower = 50
+			end
+			flashFrameColor(COLOR_SUCCESS)
+		else
+			flashFrameColor(COLOR_ERROR)
+		end
+	
+		textBox.Text = ""
+	end)
+	
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if not flyUnlocked then return end
+		if input.KeyCode == toggleKey then
+			if flying then stopFlying() else startFlying() end
+		end
+	end)
+	
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not clickAudioEnabled then return end
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			clickSound:Play()
+		end
+	end)
+	
+	
+	RunService.Stepped:Connect(function()
+		if not noclipping then return end
+		local character = player.Character
+		if not character then return end
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") and part.CanCollide then
+				part.CanCollide = false
+			end
+		end
+	end)
+	
+	RunService.RenderStepped:Connect(function()
+		if not flying then return end
+		local humanoid, rootPart = getCharacterParts()
+		if not humanoid or not rootPart or humanoid.Health <= 0 then
+			stopFlying()
+			return
+		end
+	
+		local moveDirection = Vector3.zero
+		local camCFrame = camera.CFrame
+	
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection += camCFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection -= camCFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection -= camCFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection += camCFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection += Vector3.yAxis end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDirection -= Vector3.yAxis end
+	
+		if moveDirection.Magnitude > 0 then moveDirection = moveDirection.Unit end
+		if not spinning then bodyGyro.CFrame = camCFrame end
+		bodyVelocity.Velocity = moveDirection * flySpeed
+	end)
+	
+	RunService.RenderStepped:Connect(function(deltaTime)
+		if not petPart then return end
+	
+		local humanoid, rootPart = getCharacterParts()
+		if not humanoid or not rootPart or humanoid.Health <= 0 then
+			return
+		end
+	
+		-- Gentle up-and-down bobbing motion + offset to the right & slightly behind
+		local bobOffset = math.sin(os.clock() * 4) * 0.4
+		local targetPosition = (rootPart.CFrame * CFrame.new(3.2, 2 + bobOffset, 1.5)).Position
+	
+		-- Smooth lerp follow
+		local alpha = math.clamp(deltaTime * 8, 0, 1)
+		local newPos = petPart.Position:Lerp(targetPosition, alpha)
+		petPart.CFrame = CFrame.new(newPos)
+	end)
+	
+	
+	player.CharacterAdded:Connect(function()
+		stopFlying()
+		stopSpinning()
+		noclipping = false
+		task.wait(0.1)
+		resetCameraToSelf()
+	end)
+	
+end
+coroutine.wrap(ROELTXA_fake_script)()
